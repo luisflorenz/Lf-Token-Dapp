@@ -1,1 +1,1 @@
-# LfTokenMinter
+# Lf Token Dapp
