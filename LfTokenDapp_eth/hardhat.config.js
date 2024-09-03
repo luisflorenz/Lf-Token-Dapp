@@ -1,8 +1,7 @@
-require("dotenv").config();
+require('dotenv').config();
 require("@nomicfoundation/hardhat-toolbox");
-
-//console.log("Alchemy URL:", process.env.REACT_APP_ALCHEMY_URL);
-//console.log("Private Key:", process.env.SEPOLIA_PRIVATE_KEY ? "Loaded" : "Not Loaded");
+//require("@nomiclabs/hardhat-waffle");
+//require("@nomiclabs/hardhat-ethers");
 
 module.exports = {
   solidity: {
@@ -23,5 +22,3 @@ module.exports = {
     },
   },
 };
-
-
