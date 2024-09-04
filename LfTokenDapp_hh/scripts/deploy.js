@@ -5,11 +5,11 @@ require('dotenv').config(); // Load environment variables from .env file
 
 async function main() {
   // Read Alchemy URL and private key from .env
-  const INFURA_URL = process.env.REACT_APP_ALCHEMY_URL;
+  const ARCHEMY_URL = process.env.REACT_APP_ALCHEMY_URL;
   const PRIVATE_KEY = process.env.SEPOLIA_PRIVATE_KEY;
 
   // Create a provider and a wallet instance
-  const provider = new ethers.JsonRpcProvider(INFURA_URL);
+  const provider = new ethers.JsonRpcProvider(ARCHEMY_URL);
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
   console.log("Deploying contracts with the account:", wallet.address);
