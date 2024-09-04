@@ -1,31 +1,29 @@
-require('dotenv').config();
 const hre = require("hardhat");
 
 async function main() {
-    // Get the contract factory
-    const MyNFT = await hre.ethers.getContractFactory("MyNFT");
+  // Get the contract to deploy
+  const MyNFT = await hre.ethers.getContractFactory("MyNFT");
 
-    console.log("Deploying MyNFT...");
+  // Explicit gas settings
+  const gasLimit = 3000000; // Adjust based on contract complexity
+  const gasPrice = hre.ethers.utils.parseUnits("20", "gwei"); // Adjust Gwei as needed
 
-    // Deploy the contract
-    const myNFT = await MyNFT.deploy();
+  // Deploy contract with explicit gas settings
+  const myNFT = await MyNFT.deploy({
+    gasLimit: gasLimit,
+    gasPrice: gasPrice,
+  });
 
-    // Wait for the transaction to be mined
-    const tx = await myNFT.deployTransaction;
-    
-    console.log(`Transaction hash: ${tx.hash}`);
+  console.log("Deploying MyNFT...");
+  await myNFT.deployed();
 
-    // Wait for the transaction to be confirmed
-    const receipt = await tx.wait();
-
-    console.log(`MyNFT deployed to: ${myNFT.address}`);
-    console.log(`Transaction receipt:`, receipt);
+  console.log("MyNFT deployed to:", myNFT.address);
 }
 
 // Execute the script
 main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error("Error during deployment:", error);
-        process.exit(1);
-    });
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("Deployment failed:", error);
+    process.exit(1);
+  });
