@@ -1,7 +1,7 @@
 import React from 'react';
 import { pinJSONToIPFS } from "./pinata.js";
 import contractABI from "../contracts/MyNFT.json";
-require("dotenv").config();
+//require("dotenv").config();
 
 const alchemyKey = process.env.REACT_APP_ALCHEMY_URL; // Corrected variable name
 const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
