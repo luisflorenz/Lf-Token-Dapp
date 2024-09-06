@@ -34,14 +34,14 @@ function Minter() {
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      const { address, formattedBalance, status } = await getCurrentWalletConnected();
+      const { address, formattedBalance } = await getCurrentWalletConnected();
       setWalletAddress(address);
       setWalletBalance(formattedBalance);
     };
     fetchWalletData();
     addWalletListener();
   }, []);
-    
+
   const addWalletListener = () => {
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts) => {
@@ -143,7 +143,7 @@ function Minter() {
                 Wallet Address: {walletAddress}
               </Typography>
               <Typography align="center">
-                Wallet Balance: {walletBalance} ETH
+                Wallet Balance: {walletBalance} SHM
               </Typography>
             </Box>
           )}

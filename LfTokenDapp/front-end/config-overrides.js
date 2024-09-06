@@ -5,13 +5,14 @@ module.exports = function override(config) {
   config.resolve.fallback = {
     http: require.resolve('stream-http'),
     https: require.resolve('https-browserify'),
+    zlib: require.resolve('browserify-zlib'),
     os: require.resolve('os-browserify/browser'),
     buffer: require.resolve('buffer/'),
     stream: require.resolve('stream-browserify'),
     crypto: require.resolve('crypto-browserify'),
     url: require.resolve('url/'),
     assert: require.resolve('assert/'),
-    zlib: require.resolve('browserify-zlib'),
+    fs: false,  // Disable 'fs' since it's not available in the browser
   };
 
   // Enable source-map-loader to handle Web3 warnings
@@ -19,6 +20,7 @@ module.exports = function override(config) {
     test: /\.js$/,
     enforce: 'pre',
     use: ['source-map-loader'],
+    exclude: /node_modules/, // Optional: Exclude node_modules from source-map-loader to reduce noise
   });
 
   // Define plugins for buffer and process polyfills
