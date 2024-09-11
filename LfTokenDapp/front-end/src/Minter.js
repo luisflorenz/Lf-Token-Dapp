@@ -4,7 +4,7 @@ import {
   getCurrentWalletConnected,
   mintNFT,
 } from "./util/interactConnection.js";
-import { pinJSONToIPFS } from "./util/pinata.js";
+import { pinFileToIPFS, pinJSONToIPFS } from "./util/pinata.js";
 import {
   TextField,
   Button,
@@ -17,6 +17,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { getTransactionDetails } from "./util/getTransactionDetails";
+import Web3 from "web3"; // Make sure this is at the top of your file
 
 function Minter() {
   const [name, setName] = useState("");
@@ -34,26 +35,58 @@ function Minter() {
 
   // New: function to connect wallet and fetch balance
   const connectWalletPressed = async () => {
+    // Connect the wallet and get response
     const walletResponse = await connectWallet();
     setStatus(walletResponse.status);
     setWalletAddress(walletResponse.address);
 
     // Fetch balance if wallet is connected
     if (walletResponse.address) {
-      const balance = await window.web3.eth.getBalance(walletResponse.address);
-      const formattedBalance = window.web3.utils.fromWei(balance, "ether");
-      setWalletBalance(formattedBalance);
+      // Initialize Web3 after wallet connection
+      const web3 = new Web3(window.ethereum);
+
+      try {
+        // Fetch the balance using the connected wallet address
+        const balance = await web3.eth.getBalance(walletResponse.address);
+        const formattedBalance = web3.utils.fromWei(balance, "ether");
+        setWalletBalance(formattedBalance);
+      } catch (error) {
+        setStatus(`😥 Error fetching balance: ${error.message}`);
+      }
     }
   };
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      const { address, formattedBalance } = await getCurrentWalletConnected();
-      setWalletAddress(address);
-      setWalletBalance(formattedBalance || "0"); // Set initial balance to "0"
+      if (window.ethereum) {
+        const web3 = new Web3(window.ethereum);
+        try {
+          const { address, formattedBalance } = await getCurrentWalletConnected(
+            web3
+          );
+          setWalletAddress(address);
+          setWalletBalance(formattedBalance || "0");
+        } catch (error) {
+          console.error("Error fetching wallet data:", error);
+        }
+      } else {
+        setStatus(
+          <p>
+            🦊{" "}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`https://metamask.io/download.html`}
+            >
+              You must install Metamask, a virtual Ethereum wallet, in your
+              browser.
+            </a>
+          </p>
+        );
+      }
     };
     fetchWalletData();
-    addWalletListener();
+    addWalletListener(); // Add listener to detect account changes
   }, []);
 
   const addWalletListener = () => {
@@ -61,13 +94,17 @@ function Minter() {
       window.ethereum.on("accountsChanged", async (accounts) => {
         if (accounts.length > 0) {
           const newAddress = accounts[0];
-          setWalletAddress(newAddress);
-          setStatus("👆🏽 Write a message in the text-field above.");
 
-          // Fetch the new balance
-          const balance = await window.web3.eth.getBalance(newAddress);
-          const formattedBalance = window.web3.utils.fromWei(balance, "ether");
+          // Initialize web3 locally within the listener
+          const web3 = new Web3(window.ethereum);
+
+          // Fetch the new balance using web3 instance
+          const balance = await web3.eth.getBalance(newAddress);
+          const formattedBalance = web3.utils.fromWei(balance, "ether");
+
+          setWalletAddress(newAddress);
           setWalletBalance(formattedBalance);
+          setStatus("👆🏽 Write a message in the text-field above.");
         } else {
           setWalletAddress("");
           setWalletBalance("0"); // Reset balance if disconnected
@@ -105,17 +142,27 @@ function Minter() {
 
     setLoading(true);
 
-    // Upload metadata to IPFS
+    // Upload the image to IPFS
+    const uploadResponse = await pinFileToIPFS(image);
+
+    if (!uploadResponse.success) {
+      setStatus("😢 Failed to upload image to IPFS.");
+      setLoading(false);
+      return;
+    }
+
+    // Prepare metadata
     const metadata = {
       name,
       description,
-      image,
+      image: uploadResponse.pinataUrl, // Use the IPFS URL of the uploaded image
     };
 
-    const response = await pinJSONToIPFS(metadata);
+    // Upload metadata to IPFS
+    const metadataResponse = await pinJSONToIPFS(metadata);
 
-    if (response.success) {
-      const tokenURI = response.pinataUrl;
+    if (metadataResponse.success) {
+      const tokenURI = metadataResponse.pinataUrl;
       setIpfsLink(tokenURI);
 
       // Mint the NFT
