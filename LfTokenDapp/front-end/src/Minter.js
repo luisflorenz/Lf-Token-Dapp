@@ -12,11 +12,11 @@ import {
   Container,
   Box,
   Link,
-  Grid,
   Snackbar,
   Alert,
   LinearProgress,
 } from "@mui/material";
+import { getTransactionDetails } from "./util/getTransactionDetails";
 
 function Minter() {
   const [name, setName] = useState("");
@@ -28,15 +28,29 @@ function Minter() {
   const [alertOpen, setAlertOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
-  const [walletBalance, setWalletBalance] = useState("");
+  const [walletBalance, setWalletBalance] = useState("0"); // Set initial balance to "0"
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [transactionHistory, setTransactionHistory] = useState([]);
+
+  // New: function to connect wallet and fetch balance
+  const connectWalletPressed = async () => {
+    const walletResponse = await connectWallet();
+    setStatus(walletResponse.status);
+    setWalletAddress(walletResponse.address);
+
+    // Fetch balance if wallet is connected
+    if (walletResponse.address) {
+      const balance = await window.web3.eth.getBalance(walletResponse.address);
+      const formattedBalance = window.web3.utils.fromWei(balance, "ether");
+      setWalletBalance(formattedBalance);
+    }
+  };
 
   useEffect(() => {
     const fetchWalletData = async () => {
       const { address, formattedBalance } = await getCurrentWalletConnected();
       setWalletAddress(address);
-      setWalletBalance(formattedBalance);
+      setWalletBalance(formattedBalance || "0"); // Set initial balance to "0"
     };
     fetchWalletData();
     addWalletListener();
@@ -44,12 +58,19 @@ function Minter() {
 
   const addWalletListener = () => {
     if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
+      window.ethereum.on("accountsChanged", async (accounts) => {
         if (accounts.length > 0) {
-          setWalletAddress(accounts[0]);
+          const newAddress = accounts[0];
+          setWalletAddress(newAddress);
           setStatus("👆🏽 Write a message in the text-field above.");
+
+          // Fetch the new balance
+          const balance = await window.web3.eth.getBalance(newAddress);
+          const formattedBalance = window.web3.utils.fromWei(balance, "ether");
+          setWalletBalance(formattedBalance);
         } else {
           setWalletAddress("");
+          setWalletBalance("0"); // Reset balance if disconnected
           setStatus("🦊 Connect to Metamask using the top right button.");
         }
       });
@@ -88,7 +109,7 @@ function Minter() {
     const metadata = {
       name,
       description,
-      image
+      image,
     };
 
     const response = await pinJSONToIPFS(metadata);
@@ -101,11 +122,23 @@ function Minter() {
       const mintResponse = await mintNFT(tokenURI, name, description);
 
       if (mintResponse.success) {
-        setTransactionHistory([...transactionHistory, mintResponse.transactionHash]);
+        setTransactionHistory([
+          ...transactionHistory,
+          mintResponse.transactionHash,
+        ]);
+
+        // Retrieve transaction details from Etherscan
+        const transactionDetails = await getTransactionDetails(
+          mintResponse.transactionHash
+        );
+        console.log(transactionDetails);
+
         setStatus(mintResponse.status);
         setAlertOpen(true);
       } else {
-        setStatus("😥 Something went wrong during minting: " + mintResponse.status);
+        setStatus(
+          "😥 Something went wrong during minting: " + mintResponse.status
+        );
       }
     } else {
       setStatus("😢 Something went wrong while uploading your tokenURI.");
@@ -118,23 +151,27 @@ function Minter() {
     <Container maxWidth="lg" className="minter-container">
       <Box sx={{ mt: 4, mb: 2 }}>
         <Typography variant="h4" align="center" gutterBottom>
-          Shardeum NFT Minter
+          Mamut NFT Minter
         </Typography>
       </Box>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+      <Box
+        display="flex"
+        flexDirection={{ xs: "column", md: "row" }}
+        spacing={2}
+      >
+        <Box flex={1} mr={{ md: 2 }}>
           <Box mt={2}>
             <Button
               fullWidth
               variant="contained"
               color="primary"
-              onClick={connectWallet}
+              onClick={connectWalletPressed} // Updated button handler
               size="small"
               disabled={!!walletAddress}
             >
               {walletAddress
                 ? "Wallet Connected"
-                : "Connect Wallet to Shardeum Sphinx Dapp 1.X"}
+                : "Connect Wallet to Mamut NFT Minter Token Dapp 1.X"}
             </Button>
           </Box>
           {walletAddress && (
@@ -143,7 +180,7 @@ function Minter() {
                 Wallet Address: {walletAddress}
               </Typography>
               <Typography align="center">
-                Wallet Balance: {walletBalance} SHM
+                Wallet Balance: {walletBalance} ETH
               </Typography>
             </Box>
           )}
@@ -207,8 +244,8 @@ function Minter() {
               NFT minted successfully!
             </Alert>
           </Snackbar>
-        </Grid>
-        <Grid item xs={12} md={6}>
+        </Box>
+        <Box flex={1} ml={{ md: 2 }} mt={{ xs: 2, md: 0 }}>
           <Box
             mt={2}
             sx={{
@@ -241,21 +278,21 @@ function Minter() {
               </Typography>
             )}
           </Box>
-        </Grid>
-        <Box mt={2}>
-          <Typography align="center" color="textSecondary">
-            {status}
-          </Typography>
-          {ipfsLink && (
-            <Typography align="left">
-              IPFS Link:{" "}
-              <Link href={ipfsLink} target="_blank" rel="noopener noreferrer">
-                {ipfsLink}
-              </Link>
-            </Typography>
-          )}
         </Box>
-      </Grid>
+      </Box>
+      <Box mt={2}>
+        <Typography align="center" color="textSecondary">
+          {status}
+        </Typography>
+        {ipfsLink && (
+          <Typography align="left">
+            IPFS Link:{" "}
+            <Link href={ipfsLink} target="_blank" rel="noopener noreferrer">
+              {ipfsLink}
+            </Link>
+          </Typography>
+        )}
+      </Box>
       <Box mt={4}>
         <Typography variant="h7" align="center">
           Transaction History:
@@ -264,7 +301,7 @@ function Minter() {
           transactionHistory.map((hash, index) => (
             <Box key={index} mt={1} textAlign="left">
               <Link
-                href={`https://explorer-dapps.shardeum.org/transaction/${hash}`}
+                href={`https://sepolia.etherscan.io/tx/${hash}`} // Updated to Sepolia Etherscan
                 target="_blank"
                 rel="noopener noreferrer"
               >
