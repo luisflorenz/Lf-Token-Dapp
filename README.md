@@ -16,7 +16,7 @@ The pinFileToIPFS function uploads. The selected image is sent to IPFS and retur
 
 4- Minting NFTs: Once the image and metadata are uploaded to IPFS, users can mint the NFT on the Sepolia network. The NFT’s metadata URI (IPFS link) is passed to the smart contract for minting. A transaction is created and requires user confirmation in MetaMask.
 
-5-Transaction Confirmation: After a successful minting transaction, the transaction hash and details are retrieved via Etherscan for tracking.
+5- Transaction Confirmation: After a successful minting transaction, the transaction hash and details are retrieved via Etherscan for tracking.
 
 6- Error Handling: If there are issues with the wallet connection, image upload, or transaction, appropriate error messages are shown to guide the user.
 
